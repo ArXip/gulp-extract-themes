@@ -1,3 +1,5 @@
+/* first css file */
+
 html {
   background-color: green;
 }
@@ -6,4 +8,12 @@ html {
   a {
     height: 10rem;
   }
+}
+
+.myOwnSelector {
+
+}
+
+@font-face{
+    font-family:'Linearicons-Free';
 }

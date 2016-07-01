@@ -1,0 +1,152 @@
+/* third css file */
+
+.share {
+    margin: 10px 7px 0;
+}
+
+#content .informers {
+    min-height: 430px;
+    min-width: 320px;
+    max-height: 249px;
+    margin: 0;
+    padding: 0 7px;
+    z-index: 1;
+}
+
+.header__dropdown._informer .dropdown__container:after,.header__dropdown._informer .dropdown__container:before {
+    content: "";
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 19px;
+    height: 10px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.login-links {
+    display: table;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-top: none;
+}
+
+.login-links__link {
+    display: table-cell;
+    box-sizing: border-box;
+    width: 50%;
+}
+
+.feed__col {
+    display: inline-block;
+    vertical-align: top;
+    box-shadow: none;
+    background-color: transparent;
+    max-width: none;
+    margin: 0;
+    position: static;
+}
+
+.user-card_list {
+    width: 50%;
+}
+
+.profile__banks {
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-wrap: nowrap;
+    -ms-flex-wrap: nowrap;
+    flex-wrap: nowrap;
+}
+
+.profile__bank-btn {
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    -webkit-flex-basis: 150px;
+    -ms-flex-preferred-size: 150px;
+    flex-basis: 150px;
+}
+
+.stats-table__col._users {
+    display: table-cell;
+}
+
+.profile-design {
+    padding: 0 220px 41px;
+}
+
+.profile-design__choose {
+    opacity: 0;
+}
+
+.profile-tariff__feature:before {
+    content: "+ ";
+    font-size: 14px;
+    font-weight: 700;
+    color: #2f2f2f;
+}
+
+@media only screen and (max-device-width:640px) and (orientation:portrait) {
+    .banner__content {
+        left: 5%;
+        right: 5%;
+    }
+}
+
+@media only screen and (max-device-width:736px) and (orientation:landscape) {
+    .banner__title {
+        font-size: 5vh;
+    }
+
+    .banner__subtitle {
+        font-size: 5.5vh;
+    }
+
+    .banner__bar {
+        margin: 4vh -20px 3vh;
+    }
+
+    .banner__btn {
+        font-size: 4vh;
+    }
+}
+
+@media only screen and (min-width:1600px) and (orientation:landscape) {
+    .banner__title {
+        font-size: 2vh;
+    }
+
+    .banner__subtitle {
+        font-size: 3vh;
+    }
+
+    .banner__subtitle,.banner__title {
+        margin: 3vh 0;
+    }
+
+    .banner__bar {
+        margin: 0 -20px 2vh;
+    }
+
+    .banner__btn {
+        font-size: 2.5vh;
+        padding: .5vh 1.5vh .75vh;
+        border-radius: .5vh;
+    }
+}
+
+@media (min-width:684px) {
+    .profile-design__theme {
+        display: inline-block;
+        margin: 0 20px 37px;
+        width: 100%;
+    }
+}
+
+@media (min-width:1124px) {
+    .profile-design__flex-fix {
+        display: inline-block;
+    }
+}

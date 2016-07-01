@@ -2,157 +2,163 @@ var _ = require('lodash'),
   gulp = require('gulp'),
   expect = require('chai').expect,
   gUtil = require('gulp-util'),
-  groupConcat = require('../.'),
+  extractThemes = require('../.'),
   buffer = require('vinyl-buffer'),
-  sourcemaps = require('gulp-sourcemaps'),
-  please = require('gulp-pleeease');
+  sourcemaps = require('gulp-sourcemaps')
+
+var CSS_COMMENTS = [
+  'first css file',
+  'second css file',
+  'third css file'
+]
 
 function tests(withBuffer) {
-  it('no matchs returns no files', function (done) {
-    gulp.src('./test/fixtures/*')
-      .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({}))
-      .pipe(gUtil.buffer(function (err, files) {
-        expect(files).to.have.length(0);
-        done();
-      }))
-  });
 
-  it('match returns file', function (done) {
-    gulp.src('./test/fixtures/*')
+  it('no matches', function (done) {
+    gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({'myFile': '**/*'}))
+      .pipe(extractThemes({
+        themes: [],
+        themeSource: '**/*',
+        themeChunk: '[theme].css',
+        commonChunk: 'common.css'
+      }))
       .pipe(gUtil.buffer(function (err, files) {
         expect(files).to.have.length(1);
+        expect(files[0].basename).to.equal('common.css');
         done();
       }))
   });
 
-  it('multi-match with two groups returns two files', function (done) {
-    gulp.src('./test/fixtures/*')
+  it('multi-match with single theme and commons', function (done) {
+    gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile1': '**/*1*',
-        'myFile2': '**/*2*'
+      .pipe(extractThemes({
+        themes: [
+          'Css1'
+        ],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        commonChunk: 'common.css'
       }))
       .pipe(gUtil.buffer(function (err, files) {
+        var filenames = files.map( function( file ) {
+          return file.basename
+        } )
         expect(files).to.have.length(2);
+        expect(filenames).to.include('common.css');
+        expect(filenames).to.include('Css1.css');
         done();
       }))
   });
 
-  it('multi-match with two groups returns two files with source-maps', function (done) {
+  it('multi-match with single theme and commons with source-maps', function (done) {
     gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
       .pipe(sourcemaps.init())
-      .pipe(please())
-      .pipe(groupConcat({
-        'myFile1': '**/*1*',
-        'myFile2': '**/*2*'
+      .pipe(extractThemes({
+        themes: [
+          'Css1'
+        ],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        commonChunk: 'common.css'
       }))
       .pipe(sourcemaps.write('.'))
       .pipe(gUtil.buffer(function (err, files) {
+        var filenames = files.map( function( file ) {
+          return file.basename
+        } )
         expect(files).to.have.length(4);
-        expect(_.some(files, function (file) {
-          //one or more files have a reference to this filename (thus having a sourcemap)
-          return file.contents.toString().indexOf('genericCss1.css') > -1;
-        })).to.equal(true);
+        expect(filenames).to.have.members([
+          'Css1.css',
+          'common.css',
+          'Css1.css.map',
+          'common.css.map'
+        ]);
         done();
       }))
   });
 
-  it('can ask for negation', function (done) {
-    gulp.src('./test/fixtures/*')
+
+  it('cant duplicate css content', function (done) {
+    gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile1': ['**/*', '!**/*.css']
+      .pipe(extractThemes({
+        themes: [
+          'Css1',
+          'Css2'
+        ],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        commonChunk: 'common.css'
+      }))
+      .pipe(gUtil.buffer(function (err, files) {
+        expect(files).to.have.length(3);
+
+        files.forEach(function (file) {
+          var content = file.contents.toString()
+          var commentsFound = CSS_COMMENTS.filter( function( cssComment ) {
+            return ~content.indexOf( cssComment )
+          } )
+
+          expect(commentsFound).to.have.length(1);
+        });
+        done();
+      }))
+  });
+
+  it('should inject custom selector', function (done) {
+    gulp.src('./test/fixtures/*.css')
+      .pipe(withBuffer ? buffer() : gUtil.noop())
+      .pipe(extractThemes({
+        themes: [
+          'Css1'
+        ],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        selectorPrefix: '#greatPrefixWith_[theme]_name'
       }))
       .pipe(gUtil.buffer(function (err, files) {
         expect(files).to.have.length(1);
+        expect(files[0].contents.toString()).to.contains('#greatPrefixWith_Css1_name .myOwnSelector');
         done();
       }))
   });
 
-  it('can ask for negation within glob', function (done) {
+  it('should inject custom selector with source-maps', function (done) {
     gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
       .pipe(sourcemaps.init())
-      .pipe(please())
-      .pipe(groupConcat({
-        'myFile1': ['**/*', '!**/*1*']
+      .pipe(extractThemes({
+        themes: [
+          'Css1'
+        ],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        selectorPrefix: '#greatPrefixWith_[theme]_name'
       }))
       .pipe(sourcemaps.write('.'))
       .pipe(gUtil.buffer(function (err, files) {
         expect(files).to.have.length(2);
+        expect(files[1].contents.toString()).to.contains('#greatPrefixWith_Css1_name .myOwnSelector')
         done();
       }))
   });
 
-  it('can duplicate', function (done) {
-    gulp.src('./test/fixtures/*')
+  it('should inject custom selector only in themes', function (done) {
+    gulp.src('./test/fixtures/*.css')
       .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile1': '**/*',
-        'myFile2': '**/*'
-      }))
-      .pipe(gUtil.buffer(function (err, files) {
-        expect(files).to.have.length(2);
-        files.forEach(function (file) {
-          //all files contain these
-          expect(file.contents.toString()).to.contain('Some generic text in the first text file');
-          expect(file.contents.toString()).to.contain('Some generic text in the second text file');
-        });
-        done();
-      }))
-  });
-
-  it('matches on any positive', function (done) {
-    gulp.src('./test/fixtures/*')
-      .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile': ['**/thing', '**/*']
+      .pipe(extractThemes({
+        themes: [],
+        themeSource: '**/*[theme].css',
+        themeChunk: '[theme].css',
+        commonChunk: 'common.css',
+        selectorPrefix: '#greatPrefix'
       }))
       .pipe(gUtil.buffer(function (err, files) {
         expect(files).to.have.length(1);
-        files.forEach(function (file) {
-          //all files contain these
-          expect(file.contents.toString()).to.contain('Some generic text in the first text file');
-          expect(file.contents.toString()).to.contain('Some generic text in the second text file');
-        });
-        done();
-      }))
-  });
-
-  it('does not match everything always', function (done) {
-    gulp.src('./test/fixtures/*')
-      .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile': ['**/*.css']
-      }))
-      .pipe(gUtil.buffer(function (err, files) {
-        expect(files).to.have.length(1);
-        files.forEach(function (file) {
-          //all files contain these
-          expect(file.contents.toString()).to.not.contain('Some generic text in the first text file');
-          expect(file.contents.toString()).to.not.contain('Some generic text in the second text file');
-        });
-        done();
-      }))
-  });
-
-  it('matches from base', function (done) {
-    gulp.src('test/fixtures/*')
-      .pipe(withBuffer ? buffer() : gUtil.noop())
-      .pipe(groupConcat({
-        'myFile': ['test/fixtures/*.css']
-      }))
-      .pipe(gUtil.buffer(function (err, files) {
-        expect(files).to.have.length(1);
-        files.forEach(function (file) {
-          //all files contain these
-          expect(file.contents.toString()).to.not.contain('Some generic text in the first text file');
-          expect(file.contents.toString()).to.not.contain('Some generic text in the second text file');
-        });
+        expect(files[0].contents.toString()).to.not.contains('#greatPrefix');
         done();
       }))
   });
@@ -169,8 +175,46 @@ describe('without buffers', function () {
 describe('config failure', function () {
   it('throws on being given array', function (done) {
     expect(function () {
-      gulp.src('./test/fixtures/*')
-        .pipe(groupConcat(['**/*']))
+      gulp.src('./test/fixtures/*.css')
+        .pipe(extractThemes(['**/*']))
+        .pipe(gUtil.buffer(function (err, files) {
+          done(err || files);
+        }))
+    }).to.throw();
+    done();
+  });
+
+  it('throws when themes not specified', function (done) {
+    expect(function () {
+      gulp.src('./test/fixtures/*.css')
+        .pipe(extractThemes({}))
+        .pipe(gUtil.buffer(function (err, files) {
+          done(err || files);
+        }))
+    }).to.throw();
+    done();
+  });
+
+  it('throws when themeSource not specified', function (done) {
+    expect(function () {
+      gulp.src('./test/fixtures/*.css')
+        .pipe(extractThemes({
+          themes: []
+        }))
+        .pipe(gUtil.buffer(function (err, files) {
+          done(err || files);
+        }))
+    }).to.throw();
+    done();
+  });
+
+  it('throws when themeChunk not specified', function (done) {
+    expect(function () {
+      gulp.src('./test/fixtures/*.css')
+        .pipe(extractThemes({
+          themes: [],
+          themeSource: '*'
+        }))
         .pipe(gUtil.buffer(function (err, files) {
           done(err || files);
         }))
